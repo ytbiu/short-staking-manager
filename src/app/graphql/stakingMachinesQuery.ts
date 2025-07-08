@@ -29,12 +29,6 @@ function buildGraphQLQuery(hasMachineId: boolean, hasHolder: boolean, hasIsRente
   let whereClause = `
         isStaking:true`;
   
-  // 如果没有指定isRented条件，默认为true
-  if (!hasIsRented) {
-    whereClause += `
-        isRented:true`;
-  }
-  
   if (hasMachineId) {
     whereClause += `
         machineId_contains: $machineId`;
