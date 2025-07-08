@@ -45,5 +45,12 @@ export const CONTRACT_CONFIG = {
       stateMutability: 'view',
       type: 'function',
     },
+    {
+      inputs: [{ name: 'machineId', type: 'string' }],
+      name: 'inRentWhiteList',
+      outputs: [{ name: '', type: 'bool' }],
+      stateMutability: 'view',
+      type: 'function',
+    },
   ] as const,
 };

@@ -7,6 +7,7 @@ import { viemClient, CONTRACT_CONFIG } from '@/app/config/viem';
 interface ContractData {
   canRent: boolean;
   reason: string;
+  inWhiteList: boolean;
 }
 
 // 英文错误信息到中文的映射
@@ -43,8 +44,8 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
         setLoading(true);
         setError(null);
 
-        // 并行调用两个合约函数
-        const [canRentResult, reasonResult] = await Promise.all([
+        // 并行调用三个合约函数
+        const [canRentResult, reasonResult, whiteListResult] = await Promise.all([
           viemClient.readContract({
             address: CONTRACT_CONFIG.address,
             abi: CONTRACT_CONFIG.abi,
@@ -57,11 +58,18 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
             functionName: 'resonFoCanNotRent',
             args: [machineId],
           }),
+          viemClient.readContract({
+            address: CONTRACT_CONFIG.address,
+            abi: CONTRACT_CONFIG.abi,
+            functionName: 'inRentWhiteList',
+            args: [machineId],
+          }),
         ]);
 
         setContractData({
           canRent: canRentResult as boolean,
           reason: reasonResult as string,
+          inWhiteList: whiteListResult as boolean,
         });
       } catch (err) {
         console.error('合约调用失败:', err);
@@ -91,6 +99,12 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
             <strong>是否可租赁: </strong>
             <Tag color={contractData.canRent ? 'green' : 'red'}>
               {contractData.canRent ? '可租赁' : '不可租赁'}
+            </Tag>
+          </div>
+          <div style={{ marginBottom: '16px' }}>
+            <strong>白名单状态: </strong>
+            <Tag color={contractData.inWhiteList ? 'blue' : 'orange'}>
+              {contractData.inWhiteList ? '在白名单中' : '不在白名单中'}
             </Tag>
           </div>
           {!contractData.canRent && contractData.reason && (
