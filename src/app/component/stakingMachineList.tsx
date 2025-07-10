@@ -48,9 +48,8 @@ export function StakingMachineList({
           currentSortOrder,
           searchFilters
         );
-        setMachinesInStaking(response);
-        // 假设总数为1000，实际应该从API返回
-        setTotal(1000);
+        setMachinesInStaking(response.machines);
+        setTotal(response.total);
       } catch (error) {
         console.error("Failed to fetch staking machines:", error);
       } finally {
@@ -164,6 +163,20 @@ export function StakingMachineList({
       render: (registered: boolean) => (
         <span style={{ color: registered ? '#52c41a' : '#ff4d4f' }}>
           {registered ? '已注册' : '未注册'}
+        </span>
+      ),
+    },
+    {
+      title: "在线状态",
+      dataIndex: "online",
+      key: "online",
+      sorter: true,
+      sortOrder: currentSortBy === 'online' ? (currentSortOrder === 'asc' ? 'ascend' : 'descend') : null,
+      sortDirections: ['descend', 'ascend'],
+      showSorterTooltip: false,
+      render: (online: boolean) => (
+        <span style={{ color: online ? '#52c41a' : '#ff4d4f' }}>
+          {online ? '在线' : '离线'}
         </span>
       ),
     },
@@ -312,6 +325,21 @@ export function StakingMachineList({
                 />
               </Form.Item>
             </Col>
+            <Col xs={24} sm={12} md={4}>
+               <Form.Item
+                 label="在线状态"
+                 name="online"
+               >
+                 <Select
+                   placeholder="选择在线状态"
+                   allowClear
+                   options={[
+                     { value: true, label: "在线" },
+                     { value: false, label: "离线" }
+                   ]}
+                 />
+               </Form.Item>
+             </Col>
             <Col xs={24} sm={24} md={4}>
               <Form.Item label=" " style={{ marginBottom: 0 }}>
                 <Space>

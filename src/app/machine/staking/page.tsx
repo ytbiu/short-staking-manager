@@ -1,4 +1,4 @@
-import { StakingMachineList } from "@/app/component/stakingMachineList";
+import { StakingMachineList } from "@/app/component/StakingMachineList";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: "staking machines",
 };
 
-export default function StakingMachines() {
+export default function StakingMachinesPage() {
   return (
     <StakingMachineList pageNo={1} pageSize={10} sortBy="totalClaimedRewardAmount" sortOrder="desc" />
   );

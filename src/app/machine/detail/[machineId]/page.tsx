@@ -1,6 +1,7 @@
 import { Card } from 'antd';
 import MachineDetail from '@/app/component/MachineDetail';
 import MachineReportList from '@/app/component/MachineReportList';
+import MachineSlashedList from '@/app/component/MachineSlashedList';
 
 export default async function MachineDetailPage({params}: {params: Promise<{machineId: string}>}) {
   const { machineId } = await params;
@@ -13,6 +14,7 @@ export default async function MachineDetailPage({params}: {params: Promise<{mach
 
       <MachineDetail machineId={machineId} />
       <MachineReportList machineId={machineId} />
+      <MachineSlashedList machineId={machineId} />
     </div>
   );
 }

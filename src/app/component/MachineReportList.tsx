@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, Table, Tag, Spin, Alert } from 'antd';
+import { Card, Table, Tag, Spin, Alert, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { 
   fetchMachineReports, 
@@ -19,6 +19,25 @@ export default function MachineReportList({ machineId }: MachineReportListProps)
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentlyOffline, setCurrentlyOffline] = useState(false);
+
+  // 格式化交易hash为可点击链接
+  const formatTxHash = (hash: string | undefined) => {
+    if (!hash || hash === '0x0' || hash === ''|| hash === '0x') return '-';
+    const shortHash = `${hash.slice(0, 6)}...${hash.slice(-4)}`;
+    const txUrl = `https://dbcscan.io/zh/tx/${hash}`;
+    return (
+      <Tooltip title={`点击查看交易详情: ${hash}`}>
+        <a 
+          href={txUrl} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          style={{ color: '#1890ff', textDecoration: 'none' }}
+        >
+          {shortHash}
+        </a>
+      </Tooltip>
+    );
+  };
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -44,42 +63,73 @@ export default function MachineReportList({ machineId }: MachineReportListProps)
 
   const columns: ColumnsType<ProcessedReportRecord> = [
     {
-      title: '举报下线时间',
+      title: '离线时间',
       dataIndex: 'offlineTime',
       key: 'offlineTime',
-      width: 180,
+      render: (time: Date) => time.toLocaleString('zh-CN'),
     },
     {
-      title: '恢复上线时间',
-      dataIndex: 'reonlineTime',
-      key: 'reonlineTime',
-      width: 180,
-      render: (reonlineTime: string | undefined) => (
-        reonlineTime || <span style={{ color: '#999' }}>未恢复</span>
-      ),
+      title: '重新上线时间',
+      dataIndex: 'reOnlineTime',
+      key: 'reOnlineTime',
+      render: (time: Date | undefined) => time ? time.toLocaleString('zh-CN') : '-',
     },
     {
-      title: '离线时长',
+      title: '解质押时间',
+      dataIndex: 'unStakeTime',
+      key: 'unStakeTime',
+      render: (time: Date | undefined) => time ? time.toLocaleString('zh-CN') : '-',
+    },
+    {
+      title: '离线持续时间',
+      dataIndex: 'duration',
       key: 'duration',
-      width: 120,
-      render: (_, record) => {
-        if (record.duration) {
-          return formatDuration(record.duration);
-        }
-        return <span style={{ color: '#999' }}>进行中</span>;
-      },
+      render: (duration: string) => formatDuration(duration),
     },
     {
       title: '状态',
+      dataIndex: 'status',
       key: 'status',
-      width: 100,
-      render: (_, record) => {
-        if (record.status === 'offline') {
-          return <Tag color="red">离线中</Tag>;
+      render: (status: 'offline' | 'online' | 'unstaked') => {
+        const statusConfig = {
+          offline: { text: '离线中', color: 'red' },
+          online: { text: '已上线', color: 'green' },
+          unstaked: { text: '已解质押', color: 'blue' },
+        };
+        const config = statusConfig[status];
+        return <Tag color={config.color}>{config.text}</Tag>;
+      },
+    },
+    {
+      title: '结束方式',
+      key: 'finishType',
+      render: (record: ProcessedReportRecord) => {
+        if (record.finishedByEndStake) {
+          return <Tag color="blue">解质押结束</Tag>;
+        } else if (record.finishedByReOnline) {
+          return <Tag color="green">重新上线结束</Tag>;
         } else {
-          return <Tag color="green">已恢复</Tag>;
+          return <Tag color="orange">进行中</Tag>;
         }
       },
+    },
+    {
+      title: '离线交易Hash链接',
+      dataIndex: 'offlineTransactionHash',
+      key: 'offlineTransactionHash',
+      render: formatTxHash,
+    },
+    {
+      title: '上线交易Hash链接',
+      dataIndex: 'reOnlineTransactionHash',
+      key: 'reOnlineTransactionHash',
+      render: formatTxHash,
+    },
+    {
+      title: '解质押交易Hash链接',
+      dataIndex: 'unStakeTransactionHash',
+      key: 'unStakeTransactionHash',
+      render: formatTxHash,
     },
   ];
 
@@ -136,7 +186,7 @@ export default function MachineReportList({ machineId }: MachineReportListProps)
           <Table
             columns={columns}
             dataSource={reportRecords}
-            rowKey={(record, index) => `${record.offlineEvent.blockTimestamp}-${index}`}
+            rowKey={(record) => record.offlineTransactionHash || record.id}
             pagination={{
               pageSize: 10,
               showSizeChanger: true,
@@ -144,6 +194,7 @@ export default function MachineReportList({ machineId }: MachineReportListProps)
               showTotal: (total, range) => 
                 `第 ${range[0]}-${range[1]} 条，共 ${total} 条记录`,
             }}
+            scroll={{ x: 1520 }}
             size="middle"
           />
         </>

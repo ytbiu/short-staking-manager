@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Header } from "./component/header";
+import { Header } from "./component/Header";
 import { PageLoader } from "./component/PageLoader";
 import "./globals.css";
 import "antd/dist/reset.css";

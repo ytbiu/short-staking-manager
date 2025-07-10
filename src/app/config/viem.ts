@@ -27,8 +27,8 @@ export const viemClient = createPublicClient({
   transport: http(),
 });
 
-// 合约配置
-export const CONTRACT_CONFIG = {
+// 租赁合约配置
+export const RENT_CONTRACT_CONFIG = {
   address: '0xDA9EfdfF9CA7B7065b7706406a1a79C0e483815A' as const,
   abi: [
     {
@@ -54,3 +54,29 @@ export const CONTRACT_CONFIG = {
     },
   ] as const,
 };
+
+// 机器信息合约配置
+export const MACHINE_INFO_CONTRACT_CONFIG = {
+  address: '0x6268Aba94D0d0e4FB917cC02765f631f309a7388' as const,
+  abi: [
+    {
+      inputs: [{ name: 'machineId', type: 'string' }],
+      name: 'getMachineInfo',
+      outputs: [
+        { name: 'holder', type: 'address' },
+        { name: 'calcPoint', type: 'uint256' },
+        { name: 'startAtTimestamp', type: 'uint256' },
+        { name: 'endAtTimestamp', type: 'uint256' },
+        { name: 'nextRenterCanRentAt', type: 'uint256' },
+        { name: 'reservedAmount', type: 'uint256' },
+        { name: 'isOnline', type: 'bool' },
+        { name: 'isRegistered', type: 'bool' }
+      ],
+      stateMutability: 'view',
+      type: 'function',
+    },
+  ] as const,
+};
+
+// 保持向后兼容性
+export const CONTRACT_CONFIG = RENT_CONTRACT_CONFIG;

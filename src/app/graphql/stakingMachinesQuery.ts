@@ -18,14 +18,22 @@ query GetStakingMachines($limit: Int!, $offset: Int!, $orderBy: String!, $sort: 
       burnedRentFee
       totalReservedAmount
       isRented
+      online
       registered
-
+    }
+    totalCount: machineInfos(
+      first: 1000
+      where:{
+        isStaking:true
+      }
+    ) {
+      id
     }
 }
 `;
 
 // 动态构建查询函数
-function buildGraphQLQuery(hasMachineId: boolean, hasHolder: boolean, hasIsRented: boolean, hasRegistered: boolean): string {
+function buildGraphQLQuery(hasMachineId: boolean, hasHolder: boolean, hasIsRented: boolean, hasIsOnline: boolean, hasRegistered: boolean): string {
   let whereClause = `
         isStaking:true`;
   
@@ -42,6 +50,11 @@ function buildGraphQLQuery(hasMachineId: boolean, hasHolder: boolean, hasIsRente
   if (hasIsRented) {
     whereClause += `
         isRented: $isRented`;
+  }
+  
+  if (hasIsOnline) {
+    whereClause += `
+        online: $online`;
   }
   
   if (hasRegistered) {
@@ -68,6 +81,10 @@ function buildGraphQLQuery(hasMachineId: boolean, hasHolder: boolean, hasIsRente
     variableDeclarations.push('$isRented: Boolean!');
   }
   
+  if (hasIsOnline) {
+    variableDeclarations.push('$online: Boolean!');
+  }
+  
   if (hasRegistered) {
     variableDeclarations.push('$registered: Boolean!');
   }
@@ -88,7 +105,15 @@ query GetStakingMachines(${variableDeclarations.join(', ')}) {
       burnedRentFee
       totalReservedAmount
       isRented
+      online
       registered
+    }
+    totalCount: machineInfos(
+      first: 1000
+      where:{${whereClause}
+      }
+    ) {
+      id
     }
 }
 `;
@@ -104,6 +129,7 @@ export type StakingMachine = {
   burnedRentFee: string;
   totalReservedAmount: string;
   isRented: boolean;
+  online: boolean;
   registered: boolean;
 };
 
@@ -115,6 +141,7 @@ type RawStakingMachine = {
   burnedRentFee: string;
   totalReservedAmount: string;
   isRented: boolean;
+  online: boolean;
   registered: boolean;
 };
 
@@ -122,7 +149,13 @@ export interface SearchFilters {
   machineId?: string;
   holder?: string;
   isRented?: boolean;
+  online?: boolean;
   registered?: boolean;
+}
+
+export interface StakingMachinesResponse {
+  machines: StakingMachine[];
+  total: number;
 }
 
 export async function fetchStakingMachines(
@@ -131,23 +164,25 @@ export async function fetchStakingMachines(
   orderBy: string,
   sort: string,
   filters: SearchFilters = {}
-): Promise<StakingMachine[]> {
+): Promise<StakingMachinesResponse> {
   // 检查具体的搜索条件
   const hasMachineId = !!(filters.machineId && filters.machineId.trim());
   const hasHolder = !!(filters.holder && filters.holder.trim());
   const hasIsRented = filters.isRented !== undefined;
+  const hasIsOnline = filters.online !== undefined;
   const hasRegistered = filters.registered !== undefined;
-  const hasAnyFilters = hasMachineId || hasHolder || hasIsRented || hasRegistered;
+  const hasAnyFilters = hasMachineId || hasHolder || hasIsRented || hasIsOnline || hasRegistered;
   
   // 动态构建查询
   const queryToUse = hasAnyFilters 
-    ? buildGraphQLQuery(hasMachineId, hasHolder, hasIsRented, hasRegistered)
+    ? buildGraphQLQuery(hasMachineId, hasHolder, hasIsRented, hasIsOnline, hasRegistered)
     : stakingMachinesQueryBase;
   
   console.log("Fetching with filters:", filters);
   console.log("Has machineId filter:", hasMachineId);
   console.log("Has holder filter:", hasHolder);
   console.log("Has isRented filter:", hasIsRented);
+  console.log("Has online filter:", hasIsOnline);
   console.log("Has registered filter:", hasRegistered);
   
   // 构建变量对象
@@ -168,6 +203,9 @@ export async function fetchStakingMachines(
   }
   if (hasIsRented && filters.isRented !== undefined) {
     variables.isRented = filters.isRented;
+  }
+  if (hasIsOnline && filters.online !== undefined) {
+    variables.online = filters.online;
   }
   if (hasRegistered && filters.registered !== undefined) {
     variables.registered = filters.registered;
@@ -199,7 +237,7 @@ export async function fetchStakingMachines(
   // 检查数据是否存在
   if (!data.data || !data.data.machineInfos) {
     console.warn("No machineInfos data found:", data);
-    return [];
+    return { machines: [], total: 0 };
   }
   
   const processedMachines: StakingMachine[] = data.data.machineInfos.map(
@@ -215,10 +253,14 @@ export async function fetchStakingMachines(
         BigInt(item.totalReservedAmount) / BigInt(1e18)
       ).toString(),
       isRented: item.isRented,
+      online: item.online,
       registered: item.registered,
     })
   );
   
-  console.log(`Processed ${processedMachines.length} machines`);
-  return processedMachines;
+  // 获取总数量
+  const totalCount = data.data.totalCount ? data.data.totalCount.length : 0;
+  
+  console.log(`Processed ${processedMachines.length} machines, total: ${totalCount}`);
+  return { machines: processedMachines, total: totalCount };
 }

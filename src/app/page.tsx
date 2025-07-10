@@ -1,15 +1,11 @@
 import type { Metadata } from "next";
-
-
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
-  title: "Home",
-  description: "Home",
+  title: "质押机器列表",
+  description: "质押机器列表",
 };
 
-
 export default function Home() {
-  return (
-    <div>Home Page</div>
-  );
+  redirect('/machine/staking');
 }
