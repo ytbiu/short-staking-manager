@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from 'react';
-import { Input, Button, message, Spin } from 'antd';
+import { Input, Button, message } from 'antd';
 import { SearchOutlined, CopyOutlined } from '@ant-design/icons';
 
 export function Header() {
@@ -77,7 +77,7 @@ export function Header() {
         {/* 查询框 */}
         <div className="flex justify-center items-center py-4 border-t border-gray-700">
           <div className="flex items-center space-x-4">
-            <span className="text-gray-300">设备ID -> 机器ID:</span>
+            <span className="text-gray-300">设备ID {'->'} 机器ID:</span>
             <Input
               placeholder="请输入设备ID"
               value={deviceId}
