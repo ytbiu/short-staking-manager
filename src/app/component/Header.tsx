@@ -10,7 +10,6 @@ export function Header() {
   const [deviceId, setDeviceId] = useState('');
   const [machineId, setMachineId] = useState('');
   const [loading, setLoading] = useState(false);
-
   const handleSearch = async () => {
     if (!deviceId.trim()) {
       message.warning('请输入设备ID');
