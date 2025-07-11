@@ -1,24 +1,27 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Card, Table, Tag, Spin, Alert, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { 
-  fetchMachineReports, 
   ProcessedReportRecord, 
-  isMachineCurrentlyOffline,
   formatDuration 
 } from '@/app/graphql/machineReportQuery';
+import { useMachineReportStore } from '@/app/stores/machineReportStore';
 
 interface MachineReportListProps {
   machineId: string;
 }
 
 export default function MachineReportList({ machineId }: MachineReportListProps) {
-  const [reportRecords, setReportRecords] = useState<ProcessedReportRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [currentlyOffline, setCurrentlyOffline] = useState(false);
+  const {
+    reportRecords,
+    loading,
+    error,
+    currentlyOffline,
+    setMachineId,
+    fetchData
+  } = useMachineReportStore();
 
   // 格式化交易hash为可点击链接
   const formatTxHash = (hash: string | undefined) => {
@@ -40,26 +43,11 @@ export default function MachineReportList({ machineId }: MachineReportListProps)
   };
 
   useEffect(() => {
-    const fetchReports = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const records = await fetchMachineReports(machineId);
-        setReportRecords(records);
-        setCurrentlyOffline(isMachineCurrentlyOffline(records));
-      } catch (err) {
-        console.error('获取举报记录失败:', err);
-        setError(err instanceof Error ? err.message : '获取举报记录失败');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (machineId) {
-      fetchReports();
+      setMachineId(machineId);
+      fetchData();
     }
-  }, [machineId]);
+  }, [machineId, setMachineId, fetchData]);
 
   const columns: ColumnsType<ProcessedReportRecord> = [
     {

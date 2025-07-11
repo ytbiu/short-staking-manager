@@ -2,46 +2,26 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from 'react';
-import { Input, Button, message } from 'antd';
+import { Input, Button } from 'antd';
 import { SearchOutlined, CopyOutlined } from '@ant-design/icons';
+import { useHeaderStore } from '@/app/stores/headerStore';
 
 export function Header() {
-  const [deviceId, setDeviceId] = useState('');
-  const [machineId, setMachineId] = useState('');
-  const [loading, setLoading] = useState(false);
-  const handleSearch = async () => {
-    if (!deviceId.trim()) {
-      message.warning('请输入设备ID');
-      return;
-    }
+  const {
+    deviceId,
+    machineId,
+    loading,
+    setDeviceId,
+    searchMachineId,
+    copyMachineId
+  } = useHeaderStore();
 
-    setLoading(true);
-    try {
-      const response = await fetch(`https://nodeapi.deeplink.cloud/api/cyc/getMachineID?device_id=${deviceId.trim()}`);
-      const data = await response.json();
-      
-      if (data.success && data.code === 1) {
-        setMachineId(data.content.machine_id);
-        message.success('查询成功');
-      } else {
-        message.error(data.msg || '查询失败');
-        setMachineId('');
-      }
-    } catch (error) {
-      console.error('查询错误:', error);
-      message.error('查询失败，请检查网络连接');
-      setMachineId('');
-    } finally {
-      setLoading(false);
-    }
+  const handleSearch = () => {
+    searchMachineId(deviceId);
   };
 
   const handleCopy = () => {
-    if (machineId) {
-      navigator.clipboard.writeText(machineId);
-      message.success('机器ID已复制到剪贴板');
-    }
+    copyMachineId();
   };
 
   return (

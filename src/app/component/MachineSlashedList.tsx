@@ -1,21 +1,26 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Table, Card, message, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
-  fetchMachineSlashedRecords,
   formatAddress,
   type ProcessedSlashedRecord
 } from '../graphql/machineSlashedQuery';
+import { useMachineSlashedStore } from '@/app/stores/machineSlashedStore';
 
 interface MachineSlashedListProps {
   machineId: string;
 }
 
 const MachineSlashedList: React.FC<MachineSlashedListProps> = ({ machineId }) => {
-  const [slashedRecords, setSlashedRecords] = useState<ProcessedSlashedRecord[]>([]);
-  const [loading, setLoading] = useState(false);
+  const {
+    slashedRecords,
+    loading,
+    error,
+    setMachineId,
+    fetchData
+  } = useMachineSlashedStore();
 
   // 格式化交易Hash为可点击链接
   const formatTxHash = (hash: string) => {
@@ -113,25 +118,19 @@ const MachineSlashedList: React.FC<MachineSlashedListProps> = ({ machineId }) =>
     },
   ];
 
-  // 获取数据
-  const fetchData = async () => {
-    if (!machineId) return;
-    
-    setLoading(true);
-    try {
-      const records = await fetchMachineSlashedRecords(machineId);
-      setSlashedRecords(records);
-    } catch (error) {
-      console.error('获取惩罚记录失败:', error);
-      message.error('获取惩罚记录失败，请稍后重试');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchData();
-  }, [machineId]);
+    if (machineId) {
+      setMachineId(machineId);
+      fetchData();
+    }
+  }, [machineId, setMachineId, fetchData]);
+
+  // 显示错误消息
+  useEffect(() => {
+    if (error) {
+      message.error('获取惩罚记录失败，请稍后重试');
+    }
+  }, [error]);
 
   return (
     <Card 

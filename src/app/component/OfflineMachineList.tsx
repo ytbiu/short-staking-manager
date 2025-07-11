@@ -1,22 +1,30 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Table, Card, Input, Button, Alert, Spin, Tag, Tooltip, Form } from 'antd';
 import { SearchOutlined, ClearOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import Link from 'next/link';
-import { fetchOfflineMachines, ProcessedOfflineRecord, OfflineSearchFilters } from '../graphql/offlineMachineQuery';
+import { ProcessedOfflineRecord, OfflineSearchFilters } from '../graphql/offlineMachineQuery';
+import { useOfflineMachineStore } from '@/app/stores/offlineMachineStore';
 
 export default function OfflineMachineList() {
-  const [offlineRecords, setOfflineRecords] = useState<ProcessedOfflineRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [searchFilters, setSearchFilters] = useState<OfflineSearchFilters>({});
-  const [searching, setSearching] = useState(false);
+  const {
+    offlineRecords,
+    loading,
+    error,
+    searchFilters,
+    searching,
+    currentPage,
+    currentPageSize,
+    total,
+    fetchData,
+    handleSearch,
+    handleClearSearch,
+    handlePageChange
+  } = useOfflineMachineStore();
+  
   const [form] = Form.useForm();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [currentPageSize, setCurrentPageSize] = useState(20);
-  const [total, setTotal] = useState(0);
 
   // 格式化地址显示
   const formatAddress = (address: string) => {
@@ -33,50 +41,21 @@ export default function OfflineMachineList() {
 
 
 
-  // 获取离线机器数据
-  const fetchData = async (filters?: OfflineSearchFilters, page: number = currentPage, pageSize: number = currentPageSize) => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const offset = (page - 1) * pageSize;
-      const response = await fetchOfflineMachines(filters, pageSize, offset);
-      setOfflineRecords(response.machines);
-      setTotal(response.total);
-    } catch (err) {
-      console.error('获取离线机器记录失败:', err);
-      setError(err instanceof Error ? err.message : '获取离线机器记录失败');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // 初始加载
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // 搜索处理
-  const handleSearch = async (values: OfflineSearchFilters) => {
-    setSearching(true);
-    
-    // 过滤掉空值
-    const filteredValues = Object.fromEntries(
-      Object.entries(values).filter(([, value]) => value && value.trim() !== '')
-    );
-    
-    setSearchFilters(filteredValues);
-    setCurrentPage(1); // 重置到第一页
-    await fetchData(filteredValues, 1, currentPageSize);
-    setSearching(false);
+  const handleSearchSubmit = async (values: OfflineSearchFilters) => {
+    await handleSearch(values);
   };
 
   // 清除搜索
-  const handleClearSearch = async () => {
+  const handleClearSearchClick = () => {
     form.resetFields();
-    setSearchFilters({});
-    setCurrentPage(1); // 重置到第一页
-    await fetchData({}, 1, currentPageSize);
+    handleClearSearch();
   };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
 
   const columns: ColumnsType<ProcessedOfflineRecord> = [
     {
@@ -194,7 +173,7 @@ export default function OfflineMachineList() {
         <Form
           form={form}
           layout="inline"
-          onFinish={handleSearch}
+          onFinish={handleSearchSubmit}
           style={{ display: 'flex', gap: '10px', alignItems: 'center' }}
         >
           <Form.Item name="machineId" style={{ marginBottom: 0 }}>
@@ -225,7 +204,7 @@ export default function OfflineMachineList() {
             <Form.Item style={{ marginBottom: 0 }}>
               <Button 
                 icon={<ClearOutlined />} 
-                onClick={handleClearSearch} 
+                onClick={handleClearSearchClick} 
                 disabled={searching}
               >
                 清除
@@ -277,20 +256,11 @@ export default function OfflineMachineList() {
                 showQuickJumper: true,
                 showTotal: (total, range) => 
                   `第 ${range[0]}-${range[1]} 条，共 ${total} 条记录`,
-                onChange: async (page, pageSize) => {
-                  setCurrentPage(page);
-                  if (pageSize !== currentPageSize) {
-                    setCurrentPageSize(pageSize);
-                    setCurrentPage(1);
-                    await fetchData(searchFilters, 1, pageSize);
-                  } else {
-                    await fetchData(searchFilters, page, pageSize);
-                  }
+                onChange: (page, pageSize) => {
+                  handlePageChange(page, pageSize || currentPageSize);
                 },
-                onShowSizeChange: async (current, size) => {
-                  setCurrentPageSize(size);
-                  setCurrentPage(1);
-                  await fetchData(searchFilters, 1, size);
+                onShowSizeChange: (current, size) => {
+                  handlePageChange(1, size);
                 },
               }}
               scroll={{ x: 1180 }}

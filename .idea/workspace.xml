@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="ALL" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="515ac237-e462-4f32-ac5c-ae40661af90e" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/component/Header.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/component/Header.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/component/MachineReportList.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/component/MachineReportList.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/component/MachineSlashedList.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/component/MachineSlashedList.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/component/OfflineMachineList.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/component/OfflineMachineList.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/component/PageLoader.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/component/PageLoader.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/component/StakingMachineList.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/component/StakingMachineList.tsx" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MacroExpansionManager">
+    <option name="directoryName" value="127n9fbe" />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 3
+}]]></component>
+  <component name="ProjectId" id="2zfOK0Fis47fDaeJAq6wV9rM2nB" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.rust.reset.selective.auto.import": "true",
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "/Users/yintao/devlop/ts/short-staking-query",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon": "",
+    "org.rust.first.attach.projects": "true",
+    "ts.external.directory.path": "/Users/yintao/devlop/ts/short-staking-query/node_modules/typescript/lib"
+  }
+}]]></component>
+  <component name="RustProjectSettings">
+    <option name="toolchainHomeDirectory" value="$USER_HOME$/.cargo/bin" />
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="515ac237-e462-4f32-ac5c-ae40661af90e" name="Changes" comment="" />
+      <created>1752118592665</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1752118592665</updated>
+      <workItem from="1752118597394" duration="1268000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>

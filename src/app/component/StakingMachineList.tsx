@@ -1,16 +1,13 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Pagination, Table, Card, Typography, Tooltip, Form, Input, Button, Space, Row, Col, Select } from "antd";
 import type { ColumnsType, TableProps } from "antd/es/table";
 import { SearchOutlined, ReloadOutlined } from "@ant-design/icons";
 import { Loading } from "./Loading";
+import { useStakingMachineStore } from "@/app/stores/stakingMachineStore";
+import { StakingMachine, SearchFilters } from "@/app/graphql/stakingMachinesQuery";
 
 const { Text } = Typography;
-import {
-  fetchStakingMachines,
-  StakingMachine,
-  SearchFilters,
-} from "@/app/graphql/stakingMachinesQuery";
 
 interface StakingMachineListProps {
   pageNo?: number;
@@ -25,40 +22,36 @@ export function StakingMachineList({
   sortBy = "totalClaimedRewardAmount",
   sortOrder = "desc",
 }: StakingMachineListProps) {
-  const [machinesInStaking, setMachinesInStaking] = useState<StakingMachine[]>(
-    []
-  );
-  const [currentPage, setCurrentPage] = useState(pageNo);
-  const [currentPageSize, setCurrentPageSize] = useState(pageSize);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [currentSortBy, setCurrentSortBy] = useState(sortBy);
-  const [currentSortOrder, setCurrentSortOrder] = useState(sortOrder);
-  const [searchFilters, setSearchFilters] = useState<SearchFilters>({});
+  const {
+    machines: machinesInStaking,
+    currentPage,
+    currentPageSize,
+    total,
+    loading,
+    currentSortBy,
+    currentSortOrder,
+    fetchData,
+    handlePageChange,
+    handleSearch,
+    setCurrentPage,
+    setCurrentPageSize,
+    setSortBy,
+    setSortOrder
+  } = useStakingMachineStore();
+  
   const [form] = Form.useForm();
 
+  // 初始化store状态
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const response = await fetchStakingMachines(
-          currentPage,
-          currentPageSize,
-          currentSortBy,
-          currentSortOrder,
-          searchFilters
-        );
-        setMachinesInStaking(response.machines);
-        setTotal(response.total);
-      } catch (error) {
-        console.error("Failed to fetch staking machines:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    setCurrentPage(pageNo);
+    setCurrentPageSize(pageSize);
+    setSortBy(sortBy);
+    setSortOrder(sortOrder);
+  }, [pageNo, pageSize, sortBy, sortOrder]);
 
+  useEffect(() => {
     fetchData();
-  }, [currentPage, currentPageSize, currentSortBy, currentSortOrder, searchFilters]);
+  }, [fetchData]);
 
   const columns: ColumnsType<StakingMachine> = [
     {
@@ -166,20 +159,7 @@ export function StakingMachineList({
         </span>
       ),
     },
-    {
-      title: "在线状态",
-      dataIndex: "online",
-      key: "online",
-      sorter: true,
-      sortOrder: currentSortBy === 'online' ? (currentSortOrder === 'asc' ? 'ascend' : 'descend') : null,
-      sortDirections: ['descend', 'ascend'],
-      showSorterTooltip: false,
-      render: (online: boolean) => (
-        <span style={{ color: online ? '#52c41a' : '#ff4d4f' }}>
-          {online ? '在线' : '离线'}
-        </span>
-      ),
-    },
+
     {
       title: "详情",
       key: "detail",
@@ -196,11 +176,6 @@ export function StakingMachineList({
       ),
     },
   ];
-
-  const handlePageChange = (page: number, size: number) => {
-    setCurrentPage(page);
-    setCurrentPageSize(size);
-  };
 
   const handleTableChange: TableProps<StakingMachine>['onChange'] = (
     pagination,
@@ -224,34 +199,19 @@ export function StakingMachineList({
         }
       }
       
-      setCurrentSortBy(newSortBy);
-      setCurrentSortOrder(newSortOrder);
-      // 重置到第一页
-      setCurrentPage(1);
+      // 使用store的handleSort方法
+      const { handleSort } = useStakingMachineStore.getState();
+      handleSort(newSortBy, newSortOrder);
     }
   };
 
-  const handleSearch = (values: SearchFilters) => {
-    // 过滤掉空值，支持字符串和布尔值
-    const filteredValues = Object.fromEntries(
-      Object.entries(values).filter(([, value]) => {
-        if (typeof value === 'string') {
-          return value && value.trim() !== '';
-        }
-        if (typeof value === 'boolean') {
-          return true; // 布尔值都是有效的
-        }
-        return value !== undefined && value !== null;
-      })
-    );
-    setSearchFilters(filteredValues);
-    setCurrentPage(1); // 重置到第一页
+  const handleSearchSubmit = (values: SearchFilters) => {
+    handleSearch(values);
   };
 
   const handleReset = () => {
     form.resetFields();
-    setSearchFilters({});
-    setCurrentPage(1);
+    handleSearch({});
   };
 
   if (loading && machinesInStaking.length === 0) {
@@ -269,7 +229,7 @@ export function StakingMachineList({
         <Form
           form={form}
           layout="vertical"
-          onFinish={handleSearch}
+          onFinish={handleSearchSubmit}
           style={{ marginBottom: 0 }}
         >
           <Row gutter={16}>
@@ -325,22 +285,8 @@ export function StakingMachineList({
                 />
               </Form.Item>
             </Col>
-            <Col xs={24} sm={12} md={4}>
-               <Form.Item
-                 label="在线状态"
-                 name="online"
-               >
-                 <Select
-                   placeholder="选择在线状态"
-                   allowClear
-                   options={[
-                     { value: true, label: "在线" },
-                     { value: false, label: "离线" }
-                   ]}
-                 />
-               </Form.Item>
-             </Col>
-            <Col xs={24} sm={24} md={4}>
+
+            <Col xs={24} sm={24} md={8}>
               <Form.Item label=" " style={{ marginBottom: 0 }}>
                 <Space>
                   <Button
