@@ -6,7 +6,7 @@ const GET_MACHINE_UNREGISTER_RECORDS = `
     machineUnregisterRecords(
       where: { 
         machineId: $machineId
-        # isActive: true  # 暂时注释掉，后面再恢复
+        isActive: true 
       }
       orderBy: blockTimestamp
       orderDirection: desc

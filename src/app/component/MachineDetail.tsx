@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, Spin, Alert, Tag, Descriptions, Table, Tooltip } from 'antd';
 import { viemClient, CONTRACT_CONFIG, MACHINE_INFO_CONTRACT_CONFIG } from '../config/viem';
 import { fetchMachineUnregisterRecords, ProcessedUnregisterRecord } from '../graphql/machineUnregisterQuery';
+import { fetchMachineRentRecords, ProcessedRentRecord } from '../graphql/machineRentRecordQuery';
+import { fetchRentRenewalsByRentId, ProcessedRentRenewal } from '../graphql/rentRenewalQuery';
 
 interface ContractData {
   canRent: boolean;
@@ -75,6 +77,14 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
   const [unregisterRecords, setUnregisterRecords] = useState<ProcessedUnregisterRecord[]>([]);
   const [unregisterLoading, setUnregisterLoading] = useState(true);
   const [unregisterError, setUnregisterError] = useState<string | null>(null);
+  const [rentRecords, setRentRecords] = useState<ProcessedRentRecord[]>([]);
+  const [rentRecordsLoading, setRentRecordsLoading] = useState(false);
+  const [rentRecordsError, setRentRecordsError] = useState<string | null>(null);
+  
+  // 续租记录相关状态
+  const [expandedRowIds, setExpandedRowIds] = useState<Set<string>>(new Set());
+  const [rentRenewals, setRentRenewals] = useState<Record<string, ProcessedRentRenewal[]>>({});
+  const [renewalLoading, setRenewalLoading] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchContractData = async () => {
@@ -188,12 +198,84 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
       }
     };
 
+    const fetchRentRecords = async () => {
+      try {
+        setRentRecordsLoading(true);
+        setRentRecordsError(null);
+        const records = await fetchMachineRentRecords(machineId);
+        setRentRecords(records);
+      } catch (err) {
+        console.error('获取租用记录失败:', err);
+        setRentRecordsError(err instanceof Error ? err.message : '获取租用记录失败');
+      } finally {
+        setRentRecordsLoading(false);
+      }
+    };
+
     if (machineId) {
       fetchContractData();
       fetchMachineInfo();
       fetchUnregisterRecords();
+      fetchRentRecords();
     }
   }, [machineId]);
+
+  // 处理续租记录展开/收起
+  const handleRentRenewalExpand = useCallback(async (rowId: string, rentId: string, expanded: boolean) => {
+    console.log(`=== 续租记录展开/收起处理 ===`);
+    console.log(`rowId: ${rowId}, rentId: ${rentId}, expanded: ${expanded}`);
+    console.log(`当前expandedRowIds:`, Array.from(expandedRowIds));
+    console.log(`当前rentRenewals:`, rentRenewals);
+    
+    if (expanded) {
+      // 展开：获取续租记录
+      console.log(`展开租用记录 rowId: ${rowId}, rentId: ${rentId}`);
+      setExpandedRowIds(prev => {
+        const newSet = new Set([...prev, rowId]);
+        console.log(`更新expandedRowIds:`, Array.from(newSet));
+        return newSet;
+      });
+      
+      if (!rentRenewals[rentId]) {
+        console.log(`${rentId} 的续租记录不存在，开始获取`);
+        setRenewalLoading(prev => {
+          const newSet = new Set([...prev, rentId]);
+          console.log(`设置加载状态:`, Array.from(newSet));
+          return newSet;
+        });
+        try {
+          const renewals = await fetchRentRenewalsByRentId(rentId);
+          console.log(`获取到续租记录:`, renewals);
+          setRentRenewals(prev => {
+            const newState = { ...prev, [rentId]: renewals };
+            console.log(`更新rentRenewals状态:`, newState);
+            return newState;
+          });
+        } catch (error) {
+          console.error('获取续租记录失败:', error);
+        } finally {
+          setRenewalLoading(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(rentId);
+            console.log(`移除加载状态:`, Array.from(newSet));
+            return newSet;
+          });
+        }
+      } else {
+        console.log(`${rentId} 的续租记录已存在:`, rentRenewals[rentId]);
+      }
+    } else {
+      // 收起
+      console.log(`收起租用记录 rowId: ${rowId}, rentId: ${rentId}`);
+      setExpandedRowIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(rowId);
+        console.log(`更新expandedRowIds:`, Array.from(newSet));
+        return newSet;
+      });
+    }
+    console.log(`=== 续租记录展开/收起处理结束 ===`);
+  }, [expandedRowIds, rentRenewals]);
 
   return (
     <div>
@@ -328,6 +410,253 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
             ]}
             locale={{
               emptyText: '暂无注销注册记录',
+            }}
+          />
+        )}
+      </Card>
+
+      {/* 租用记录列表 */}
+      <Card title="租用记录列表" loading={rentRecordsLoading} style={{ marginTop: '20px' }}>
+        {rentRecordsError ? (
+          <Alert
+            message="获取租用记录失败"
+            description={rentRecordsError}
+            type="error"
+            showIcon
+          />
+        ) : (
+          <Table
+            dataSource={rentRecords}
+            rowKey="id"
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) => 
+                `第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
+            }}
+            size="small"
+            scroll={{ x: 1200 }}
+            expandable={{
+              expandedRowKeys: Array.from(expandedRowIds),
+              onExpand: (expanded, record) => {
+                console.log(`=== Table onExpand 事件 ===`);
+                console.log(`expanded: ${expanded}, record.id: ${record.id}, record.rentId: ${record.rentId}`);
+                console.log(`当前expandedRowKeys:`, Array.from(expandedRowIds));
+                handleRentRenewalExpand(record.id, record.rentId, expanded);
+              },
+              expandedRowRender: (record) => {
+                const renewals = rentRenewals[record.rentId] || [];
+                const isLoading = renewalLoading.has(record.rentId);
+                
+                console.log(`=== 渲染续租记录 ===`);
+                console.log(`record.rentId: ${record.rentId}`);
+                console.log(`renewals:`, renewals);
+                console.log(`isLoading: ${isLoading}`);
+                console.log(`rentRenewals[${record.rentId}]:`, rentRenewals[record.rentId]);
+                console.log(`renewals.length: ${renewals.length}`);
+                console.log(`=== 渲染续租记录结束 ===`);
+                
+                return (
+                  <div style={{ margin: 0 }}>
+                    <h4 style={{ marginBottom: 16 }}>续租记录</h4>
+                    {isLoading ? (
+                      <div style={{ textAlign: 'center', padding: '20px' }}>加载中...</div>
+                    ) : renewals.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>暂无续租记录</div>
+                    ) : (
+                      <Table
+                        dataSource={renewals}
+                        rowKey="id"
+                        pagination={false}
+                        size="small"
+                        scroll={{ x: 800 }}
+                        columns={[
+                          {
+                            title: '续租时间',
+                            dataIndex: 'formattedTimestamp',
+                            key: 'formattedTimestamp',
+                            width: 160,
+                          },
+                          {
+                            title: '续租时长',
+                            dataIndex: 'formattedAdditionalRentSeconds',
+                            key: 'formattedAdditionalRentSeconds',
+                            width: 120,
+                          },
+                          {
+                            title: '续租费用',
+                            dataIndex: 'formattedAdditionalRentFee',
+                            key: 'formattedAdditionalRentFee',
+                            width: 120,
+                          },
+                          {
+                            title: '续租者',
+                            dataIndex: 'renter',
+                            key: 'renter',
+                            width: 120,
+                            render: (address: string) => {
+                              const shortAddress = `${address.slice(0, 6)}...${address.slice(-4)}`;
+                              return (
+                                <Tooltip title={address}>
+                                  <span className="font-mono text-sm">{shortAddress}</span>
+                                </Tooltip>
+                              );
+                            },
+                          },
+                          {
+                            title: '区块号',
+                            dataIndex: 'blockNumber',
+                            key: 'blockNumber',
+                            width: 100,
+                          },
+                          {
+                            title: '交易哈希',
+                            dataIndex: 'transactionHash',
+                            key: 'transactionHash',
+                            width: 120,
+                            render: (hash: string) => {
+                              if (!hash || hash === '0x0' || hash === '') return '-';
+                              const shortHash = `${hash.slice(0, 6)}...${hash.slice(-4)}`;
+                              const txUrl = `https://dbcscan.io/zh/tx/${hash}`;
+                              return (
+                                <Tooltip title={`点击查看交易详情: ${hash}`}>
+                                  <a 
+                                    href={txUrl} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    style={{ color: '#1890ff', textDecoration: 'none' }}
+                                  >
+                                    {shortHash}
+                                  </a>
+                                </Tooltip>
+                              );
+                            },
+                          },
+                        ]}
+                      />
+                    )}
+                  </div>
+                );
+              },
+              rowExpandable: () => true,
+            }}
+            columns={[
+              {
+                title: '租用ID',
+                dataIndex: 'rentId',
+                key: 'rentId',
+                width: 100,
+                render: (rentId: string) => (
+                  <span className="font-mono text-sm">{rentId}</span>
+                ),
+              },
+              {
+                title: '租用者',
+                dataIndex: 'renter',
+                key: 'renter',
+                width: 120,
+                render: (address: string) => {
+                  const shortAddress = `${address.slice(0, 6)}...${address.slice(-4)}`;
+                  return (
+                    <Tooltip title={address}>
+                      <span className="font-mono text-sm">{shortAddress}</span>
+                    </Tooltip>
+                  );
+                },
+              },
+              {
+                title: '机器所有者',
+                dataIndex: 'machineOwner',
+                key: 'machineOwner',
+                width: 120,
+                render: (address: string) => {
+                  const shortAddress = `${address.slice(0, 6)}...${address.slice(-4)}`;
+                  return (
+                    <Tooltip title={address}>
+                      <span className="font-mono text-sm">{shortAddress}</span>
+                    </Tooltip>
+                  );
+                },
+              },
+              {
+                title: '租用开始时间',
+                dataIndex: 'formattedRentTime',
+                key: 'formattedRentTime',
+                width: 160,
+              },
+              {
+                title: '租用结束时间',
+                dataIndex: 'formattedRentEndTime',
+                key: 'formattedRentEndTime',
+                width: 160,
+              },
+              {
+                title: '实际结束时间',
+                dataIndex: 'formattedEndRentTime',
+                key: 'formattedEndRentTime',
+                width: 160,
+              },
+              {
+                title: '状态',
+                dataIndex: 'status',
+                key: 'status',
+                width: 80,
+                render: (status: string) => (
+                  <Tag color={status === '租用中' ? 'green' : 'default'}>
+                    {status}
+                  </Tag>
+                ),
+              },
+              {
+                title: '租用交易',
+                dataIndex: 'rentTransactionHash',
+                key: 'rentTransactionHash',
+                width: 120,
+                render: (hash: string) => {
+                  if (!hash || hash === '0x0' || hash === '') return '-';
+                  const shortHash = `${hash.slice(0, 6)}...${hash.slice(-4)}`;
+                  const txUrl = `https://dbcscan.io/zh/tx/${hash}`;
+                  return (
+                    <Tooltip title={`点击查看交易详情: ${hash}`}>
+                      <a 
+                        href={txUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        style={{ color: '#1890ff', textDecoration: 'none' }}
+                      >
+                        {shortHash}
+                      </a>
+                    </Tooltip>
+                  );
+                },
+              },
+              {
+                title: '结束交易',
+                dataIndex: 'endRentTransactionHash',
+                key: 'endRentTransactionHash',
+                width: 120,
+                render: (hash: string) => {
+                  if (!hash || hash === '0x0' || hash === '') return '-';
+                  const shortHash = `${hash.slice(0, 6)}...${hash.slice(-4)}`;
+                  const txUrl = `https://dbcscan.io/zh/tx/${hash}`;
+                  return (
+                    <Tooltip title={`点击查看交易详情: ${hash}`}>
+                      <a 
+                        href={txUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        style={{ color: '#1890ff', textDecoration: 'none' }}
+                      >
+                        {shortHash}
+                      </a>
+                    </Tooltip>
+                  );
+                },
+              },
+            ]}
+            locale={{
+              emptyText: '暂无租用记录',
             }}
           />
         )}

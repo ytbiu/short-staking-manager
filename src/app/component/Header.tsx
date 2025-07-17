@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
 import Image from "next/image";
 import Link from "next/link";
-import { Input, Button } from 'antd';
-import { SearchOutlined, CopyOutlined } from '@ant-design/icons';
-import { useHeaderStore } from '@/app/stores/headerStore';
+import { Input, Button } from "antd";
+import { SearchOutlined, CopyOutlined } from "@ant-design/icons";
+import { useHeaderStore } from "@/app/stores/headerStore";
 
 export function Header() {
   const {
@@ -13,7 +13,7 @@ export function Header() {
     loading,
     setDeviceId,
     searchMachineId,
-    copyMachineId
+    copyMachineId,
   } = useHeaderStore();
 
   const handleSearch = () => {
@@ -42,21 +42,14 @@ export function Header() {
             href="/machine/staking"
             className="ml-20 text-2xl text-gray-400 hover:text-gray-300 active:text-white focus:text-gray-300 transition-colors outline-none"
           >
-            质押机器列表
-          </Link>
-
-          <Link
-            href="/machine/offline"
-            className="ml-20 text-2xl text-gray-400 hover:text-gray-300 active:text-white focus:text-gray-300 transition-colors outline-none"
-          >
-            离线机器列表(未被租用时下线)
+            机器列表
           </Link>
         </div>
-        
+
         {/* 查询框 */}
         <div className="flex justify-center items-center py-4 border-t border-gray-700">
           <div className="flex items-center space-x-4">
-            <span className="text-gray-300">设备ID {'->'} 机器ID:</span>
+            <span className="text-gray-300">设备ID {"->"} 机器ID:</span>
             <Input
               placeholder="请输入设备ID"
               value={deviceId}
@@ -74,20 +67,20 @@ export function Header() {
               查询
             </Button>
             {machineId && (
-               <div className="flex items-center space-x-2">
-                 <span className="text-gray-300">机器ID:</span>
-                 <div 
-                   className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 flex items-center space-x-2 cursor-pointer hover:bg-gray-700 transition-colors"
-                   onClick={handleCopy}
-                   title="点击复制机器ID"
-                 >
-                   <span className="text-gray-200 font-mono text-sm select-none">
-                     {machineId}
-                   </span>
-                   <CopyOutlined className="text-gray-400 hover:text-gray-200" />
-                 </div>
-               </div>
-             )}
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-300">机器ID:</span>
+                <div
+                  className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 flex items-center space-x-2 cursor-pointer hover:bg-gray-700 transition-colors"
+                  onClick={handleCopy}
+                  title="点击复制机器ID"
+                >
+                  <span className="text-gray-200 font-mono text-sm select-none">
+                    {machineId}
+                  </span>
+                  <CopyOutlined className="text-gray-400 hover:text-gray-200" />
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

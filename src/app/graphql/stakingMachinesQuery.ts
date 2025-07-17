@@ -2,13 +2,10 @@ import { graphEndpoint } from "../const/const";
 
 // 基础查询，不包含搜索条件
 export const stakingMachinesQueryBase = `
-query GetStakingMachines($limit: Int!, $offset: Int!, $orderBy: String!, $sort: String!) {
+query GetMachines($limit: Int!, $offset: Int!, $orderBy: String!, $sort: String!) {
    machineInfos(
       first: $limit
       skip: $offset
-      where:{
-        isStaking:true
-      }
       orderBy: $orderBy,orderDirection:$sort)
     {
       machineId
@@ -20,12 +17,11 @@ query GetStakingMachines($limit: Int!, $offset: Int!, $orderBy: String!, $sort: 
       isRented
       online
       registered
+      isStaking
+      isSlashed
     }
     totalCount: machineInfos(
       first: 1000
-      where:{
-        isStaking:true
-      }
     ) {
       id
     }
@@ -33,33 +29,50 @@ query GetStakingMachines($limit: Int!, $offset: Int!, $orderBy: String!, $sort: 
 `;
 
 // 动态构建查询函数
-function buildGraphQLQuery(hasMachineId: boolean, hasHolder: boolean, hasIsRented: boolean, hasIsOnline: boolean, hasRegistered: boolean): string {
-  let whereClause = `
-        isStaking:true`;
+function buildGraphQLQuery(hasMachineId: boolean, hasHolder: boolean, hasIsRented: boolean, hasIsOnline: boolean, hasRegistered: boolean, hasIsStaking: boolean, hasIsSlashed: boolean): string {
+  let whereClause = ``;
+  let hasConditions = false;
   
   if (hasMachineId) {
     whereClause += `
         machineId_contains: $machineId`;
+    hasConditions = true;
   }
   
   if (hasHolder) {
     whereClause += `
         holder_contains: $holder`;
+    hasConditions = true;
   }
   
   if (hasIsRented) {
     whereClause += `
         isRented: $isRented`;
+    hasConditions = true;
   }
   
   if (hasIsOnline) {
     whereClause += `
         online: $online`;
+    hasConditions = true;
   }
   
   if (hasRegistered) {
     whereClause += `
         registered: $registered`;
+    hasConditions = true;
+  }
+  
+  if (hasIsStaking) {
+    whereClause += `
+        isStaking: $isStaking`;
+    hasConditions = true;
+  }
+  
+  if (hasIsSlashed) {
+    whereClause += `
+        isSlashed: $isSlashed`;
+    hasConditions = true;
   }
   
   const variableDeclarations = [
@@ -89,13 +102,25 @@ function buildGraphQLQuery(hasMachineId: boolean, hasHolder: boolean, hasIsRente
     variableDeclarations.push('$registered: Boolean!');
   }
   
+  if (hasIsStaking) {
+    variableDeclarations.push('$isStaking: Boolean!');
+  }
+  
+  if (hasIsSlashed) {
+    variableDeclarations.push('$isSlashed: Boolean!');
+  }
+  
+  const whereSection = hasConditions ? `where:{${whereClause}
+      }` : '';
+  const totalCountWhereSection = hasConditions ? `where:{${whereClause}
+      }` : '';
+  
   return `
-query GetStakingMachines(${variableDeclarations.join(', ')}) {
+query GetMachines(${variableDeclarations.join(', ')}) {
    machineInfos(
       first: $limit
       skip: $offset
-      where:{${whereClause}
-      }
+      ${whereSection}
       orderBy: $orderBy,orderDirection:$sort)
     {
       machineId
@@ -107,11 +132,12 @@ query GetStakingMachines(${variableDeclarations.join(', ')}) {
       isRented
       online
       registered
+      isStaking
+      isSlashed
     }
     totalCount: machineInfos(
       first: 1000
-      where:{${whereClause}
-      }
+      ${totalCountWhereSection}
     ) {
       id
     }
@@ -131,6 +157,8 @@ export type StakingMachine = {
   isRented: boolean;
   online: boolean;
   registered: boolean;
+  isStaking: boolean;
+  isSlashed: boolean;
 };
 
 type RawStakingMachine = {
@@ -143,6 +171,8 @@ type RawStakingMachine = {
   isRented: boolean;
   online: boolean;
   registered: boolean;
+  isStaking: boolean;
+  isSlashed: boolean;
 };
 
 export interface SearchFilters {
@@ -151,6 +181,8 @@ export interface SearchFilters {
   isRented?: boolean;
   online?: boolean;
   registered?: boolean;
+  isStaking?: boolean;
+  isSlashed?: boolean;
 }
 
 export interface StakingMachinesResponse {
@@ -171,11 +203,13 @@ export async function fetchStakingMachines(
   const hasIsRented = filters.isRented !== undefined;
   const hasIsOnline = filters.online !== undefined;
   const hasRegistered = filters.registered !== undefined;
-  const hasAnyFilters = hasMachineId || hasHolder || hasIsRented || hasIsOnline || hasRegistered;
+  const hasIsStaking = filters.isStaking !== undefined;
+  const hasIsSlashed = filters.isSlashed !== undefined;
+  const hasAnyFilters = hasMachineId || hasHolder || hasIsRented || hasIsOnline || hasRegistered || hasIsStaking || hasIsSlashed;
   
   // 动态构建查询
   const queryToUse = hasAnyFilters 
-    ? buildGraphQLQuery(hasMachineId, hasHolder, hasIsRented, hasIsOnline, hasRegistered)
+    ? buildGraphQLQuery(hasMachineId, hasHolder, hasIsRented, hasIsOnline, hasRegistered, hasIsStaking, hasIsSlashed)
     : stakingMachinesQueryBase;
   
   console.log("Fetching with filters:", filters);
@@ -184,6 +218,8 @@ export async function fetchStakingMachines(
   console.log("Has isRented filter:", hasIsRented);
   console.log("Has online filter:", hasIsOnline);
   console.log("Has registered filter:", hasRegistered);
+  console.log("Has isStaking filter:", hasIsStaking);
+  console.log("Has isSlashed filter:", hasIsSlashed);
   
   // 构建变量对象
   const baseVariables = {
@@ -209,6 +245,12 @@ export async function fetchStakingMachines(
   }
   if (hasRegistered && filters.registered !== undefined) {
     variables.registered = filters.registered;
+  }
+  if (hasIsStaking && filters.isStaking !== undefined) {
+    variables.isStaking = filters.isStaking;
+  }
+  if (hasIsSlashed && filters.isSlashed !== undefined) {
+    variables.isSlashed = filters.isSlashed;
   }
     
   console.log("Query variables:", variables);
@@ -255,6 +297,8 @@ export async function fetchStakingMachines(
       isRented: item.isRented,
       online: item.online,
       registered: item.registered,
+      isStaking: item.isStaking,
+      isSlashed: item.isSlashed,
     })
   );
   

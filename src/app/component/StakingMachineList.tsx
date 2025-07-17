@@ -47,7 +47,7 @@ export function StakingMachineList({
     setCurrentPageSize(pageSize);
     setSortBy(sortBy);
     setSortOrder(sortOrder);
-  }, [pageNo, pageSize, sortBy, sortOrder]);
+  }, [pageNo, pageSize, sortBy, sortOrder, setCurrentPage, setCurrentPageSize, setSortBy, setSortOrder]);
 
   useEffect(() => {
     fetchData();
@@ -159,6 +159,48 @@ export function StakingMachineList({
         </span>
       ),
     },
+    {
+      title: "在线状态",
+      dataIndex: "online",
+      key: "online",
+      sorter: true,
+      sortOrder: currentSortBy === 'online' ? (currentSortOrder === 'asc' ? 'ascend' : 'descend') : null,
+      sortDirections: ['descend', 'ascend'],
+      showSorterTooltip: false,
+      render: (online: boolean) => (
+        <span style={{ color: online ? '#52c41a' : '#ff4d4f' }}>
+          {online ? '在线' : '离线'}
+        </span>
+      ),
+    },
+    {
+      title: "质押状态",
+      dataIndex: "isStaking",
+      key: "isStaking",
+      sorter: true,
+      sortOrder: currentSortBy === 'isStaking' ? (currentSortOrder === 'asc' ? 'ascend' : 'descend') : null,
+      sortDirections: ['descend', 'ascend'],
+      showSorterTooltip: false,
+      render: (isStaking: boolean) => (
+        <span style={{ color: isStaking ? '#52c41a' : '#ff4d4f' }}>
+          {isStaking ? '质押中' : '未质押'}
+        </span>
+      ),
+    },
+    {
+      title: "惩罚状态",
+      dataIndex: "isSlashed",
+      key: "isSlashed",
+      sorter: true,
+      sortOrder: currentSortBy === 'isSlashed' ? (currentSortOrder === 'asc' ? 'ascend' : 'descend') : null,
+      sortDirections: ['descend', 'ascend'],
+      showSorterTooltip: false,
+      render: (isSlashed: boolean) => (
+        <span style={{ color: isSlashed ? '#ff4d4f' : '#52c41a' }}>
+          {isSlashed ? '已惩罚' : '未惩罚'}
+        </span>
+      ),
+    },
 
     {
       title: "详情",
@@ -214,16 +256,41 @@ export function StakingMachineList({
     handleSearch({});
   };
 
-  if (loading && machinesInStaking.length === 0) {
-    return (
-      <Card title="质押中的机器列表" style={{ margin: '20px' }}>
-        <Loading tip="Loading..." style={{ minHeight: '300px' }} />
-      </Card>
-    );
-  }
+  const handleCommonQueryChange = (value: string | undefined) => {
+    if (!value) {
+      // 如果清除了常用查询，不做任何操作
+      return;
+    }
+
+    // 先清除所有查询条件
+    form.resetFields();
+    
+    if (value === "offline_unstaked") {
+      // 未租用时下线: isStaking=true, online=false
+      form.setFieldsValue({
+        isStaking: true,
+        online: false
+      });
+    } else if (value === "offline_rented") {
+      // 租用中下线: isSlashed=true
+      form.setFieldsValue({
+        isSlashed: true
+      });
+    } else if (value === "staking_unregistered") {
+      // 质押中注销注册: registered=false, isStaking=true
+      form.setFieldsValue({
+        registered: false,
+        isStaking: true
+      });
+    }
+
+    // 自动提交搜索
+    const currentValues = form.getFieldsValue();
+    handleSearch(currentValues);
+  };
 
   return (
-    <Card title="质押中的机器列表" style={{ margin: '20px' }}>
+    <Card title="机器列表" style={{ margin: '20px' }}>
       {/* 搜索表单 */}
       <Card size="small" style={{ marginBottom: '16px' }}>
         <Form
@@ -270,7 +337,22 @@ export function StakingMachineList({
                 />
               </Form.Item>
             </Col>
-            <Col xs={24} sm={12} md={4}>
+            <Col xs={24} sm={12} md={3}>
+              <Form.Item
+                label="在线状态"
+                name="online"
+              >
+                <Select
+                  placeholder="选择在线状态"
+                  allowClear
+                  options={[
+                    { value: true, label: "在线" },
+                    { value: false, label: "离线" }
+                  ]}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12} md={3}>
               <Form.Item
                 label="注册状态"
                 name="registered"
@@ -285,8 +367,55 @@ export function StakingMachineList({
                 />
               </Form.Item>
             </Col>
+            <Col xs={24} sm={12} md={3}>
+              <Form.Item
+                label="质押状态"
+                name="isStaking"
+              >
+                <Select
+                  placeholder="选择质押状态"
+                  allowClear
+                  options={[
+                    { value: true, label: "质押中" },
+                    { value: false, label: "未质押" }
+                  ]}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12} md={3}>
+              <Form.Item
+                label="惩罚状态"
+                name="isSlashed"
+              >
+                <Select
+                  placeholder="选择惩罚状态"
+                  allowClear
+                  options={[
+                    { value: true, label: "已惩罚" },
+                    { value: false, label: "未惩罚" }
+                  ]}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12} md={5}>
+              <Form.Item
+                label="常用异常状态机器查询"
+                name="commonQuery"
+              >
+                <Select
+                  placeholder="选择常用查询条件"
+                  allowClear
+                  onChange={handleCommonQueryChange}
+                  options={[
+                    { value: "offline_unstaked", label: "未租用时下线" },
+                    { value: "offline_rented", label: "租用中下线" },
+                    { value: "staking_unregistered", label: "质押中注销注册" }
+                  ]}
+                />
+              </Form.Item>
+            </Col>
 
-            <Col xs={24} sm={24} md={8}>
+            <Col xs={24} sm={24} md={2}>
               <Form.Item label=" " style={{ marginBottom: 0 }}>
                 <Space>
                   <Button

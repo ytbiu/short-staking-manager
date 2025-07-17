@@ -8,6 +8,11 @@ export const metadata: Metadata = {
 
 export default function StakingMachinesPage() {
   return (
-    <StakingMachineList pageNo={1} pageSize={10} sortBy="totalClaimedRewardAmount" sortOrder="desc" />
+    <StakingMachineList
+      pageNo={1}
+      pageSize={10}
+      sortBy="totalClaimedRewardAmount"
+      sortOrder="desc"
+    />
   );
 }
