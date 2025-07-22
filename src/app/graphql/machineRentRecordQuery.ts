@@ -19,6 +19,7 @@ const GET_MACHINE_RENT_RECORDS = `
       rentTransactionHash
       endRentBlockTimestamp
       endRentTransactionHash
+      extraRentFee
     }
   }
 `;
@@ -35,6 +36,7 @@ export interface RentMachineRecord {
   rentTransactionHash: string;
   endRentBlockTimestamp: string;
   endRentTransactionHash: string;
+  extraRentFee: string;
 }
 
 export interface ProcessedRentRecord {
@@ -53,6 +55,8 @@ export interface ProcessedRentRecord {
   formattedEndRentTime: string;
   endRentTransactionHash: string;
   status: string;
+  extraRentFee: string;
+  formattedExtraRentFee: string;
 }
 
 // 格式化时间戳
@@ -62,11 +66,19 @@ function formatTimestamp(timestamp: string): string {
   return date.toLocaleString('zh-CN');
 }
 
+// 格式化额外租用费用
+function formatExtraRentFee(fee: string): string {
+  if (!fee || fee === '0') return '0 DLC';
+  const feeInDLC = Number(fee) / 1e18; // 假设fee是wei单位，转换为DLC
+  return `${feeInDLC.toFixed(4)} DLC`;
+}
+
 // 处理租用记录
 function processRentRecord(record: RentMachineRecord): ProcessedRentRecord {
   const formattedRentTime = formatTimestamp(record.rentBlockTimestamp);
   const formattedEndRentTime = formatTimestamp(record.endRentBlockTimestamp);
   const formattedRentEndTime = formatTimestamp(record.rentEndTime);
+  const formattedExtraRentFee = formatExtraRentFee(record.extraRentFee);
   
   // 确定租用状态
   let status = '已结束';
@@ -79,6 +91,7 @@ function processRentRecord(record: RentMachineRecord): ProcessedRentRecord {
     formattedRentTime,
     formattedEndRentTime,
     formattedRentEndTime,
+    formattedExtraRentFee,
     status
   };
 }

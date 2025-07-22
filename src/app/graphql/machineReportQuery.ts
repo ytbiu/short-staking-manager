@@ -1,4 +1,4 @@
-import { graphEndpoint } from '../const/const';
+import { graphEndpoint } from "../const/const";
 
 // GraphQL查询
 const GET_MACHINE_REPORTS = `
@@ -50,7 +50,7 @@ export interface ProcessedReportRecord {
   reOnlineTime?: Date;
   unStakeTime?: Date;
   duration: string;
-  status: 'offline' | 'online' | 'unstaked';
+  status: "offline" | "online" | "unstaked";
   offlineTransactionHash: string;
   reOnlineTransactionHash: string;
   unStakeTransactionHash: string;
@@ -59,12 +59,14 @@ export interface ProcessedReportRecord {
 }
 
 // 获取机器举报记录
-export async function fetchMachineReports(machineId: string): Promise<ProcessedReportRecord[]> {
+export async function fetchMachineReports(
+  machineId: string
+): Promise<ProcessedReportRecord[]> {
   try {
     const response = await fetch(graphEndpoint, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         query: GET_MACHINE_REPORTS,
@@ -77,17 +79,17 @@ export async function fetchMachineReports(machineId: string): Promise<ProcessedR
     }
 
     const result = await response.json();
-    
+
     if (result.errors) {
       throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
     }
 
     const data: MachineReportData = result.data;
-    
+
     // 处理数据
     return processReportRecords(data.machineReportedRecords);
   } catch (error) {
-    console.error('Error fetching machine reports:', error);
+    console.error("Error fetching machine reports:", error);
     throw error;
   }
 }
@@ -96,24 +98,26 @@ export async function fetchMachineReports(machineId: string): Promise<ProcessedR
 function processReportRecords(
   reportedRecords: MachineReportedRecord[]
 ): ProcessedReportRecord[] {
-  return reportedRecords.map(record => {
-     const offlineTime = new Date(parseInt(record.offlineBlockTimestamp) * 1000);
-     const reOnlineTime = record.reOnlineBlockTimestamp && record.reOnlineBlockTimestamp !== '0'
-       ? new Date(parseInt(record.reOnlineBlockTimestamp) * 1000) 
-       : undefined;
-     const unStakeTime = record.unStakeBlockTimestamp && record.unStakeBlockTimestamp !== '0'
-       ? new Date(parseInt(record.unStakeBlockTimestamp) * 1000) 
-       : undefined;
-    
-    let status: 'offline' | 'online' | 'unstaked';
+  return reportedRecords.map((record) => {
+    const offlineTime = new Date(parseInt(record.offlineBlockTimestamp) * 1000);
+    const reOnlineTime =
+      record.reOnlineBlockTimestamp && record.reOnlineBlockTimestamp !== "0"
+        ? new Date(parseInt(record.reOnlineBlockTimestamp) * 1000)
+        : undefined;
+    const unStakeTime =
+      record.unStakeBlockTimestamp && record.unStakeBlockTimestamp !== "0"
+        ? new Date(parseInt(record.unStakeBlockTimestamp) * 1000)
+        : undefined;
+
+    let status: "offline" | "online" | "unstaked";
     if (record.finishedByEndStake) {
-      status = 'unstaked';
+      status = "unstaked";
     } else if (record.finishedByReOnline) {
-      status = 'online';
+      status = "online";
     } else {
-      status = 'offline';
+      status = "offline";
     }
-    
+
     return {
       id: record.id,
       offlineTime,
@@ -121,22 +125,24 @@ function processReportRecords(
       unStakeTime,
       duration: record.offlineDuration,
       status,
-      offlineTransactionHash: record.offlineTransactionHash || '',
-      reOnlineTransactionHash: record.reOnlineTransactionHash || '',
-      unStakeTransactionHash: record.unStakeTransactionHash || '',
+      offlineTransactionHash: record.offlineTransactionHash || "",
+      reOnlineTransactionHash: record.reOnlineTransactionHash || "",
+      unStakeTransactionHash: record.unStakeTransactionHash || "",
       finishedByEndStake: record.finishedByEndStake,
-      finishedByReOnline: record.finishedByReOnline
+      finishedByReOnline: record.finishedByReOnline,
     };
   });
 }
 
 // 判断机器当前是否离线
-export function isMachineCurrentlyOffline(reports: ProcessedReportRecord[]): boolean {
+export function isMachineCurrentlyOffline(
+  reports: ProcessedReportRecord[]
+): boolean {
   if (reports.length === 0) return false;
-  
+
   // 获取最新的记录
   const latestReport = reports[0];
-  return latestReport.status === 'offline';
+  return latestReport.status === "offline";
 }
 
 // 格式化持续时间（输入为秒数字符串）
@@ -145,7 +151,7 @@ export function formatDuration(durationStr: string): string {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const remainingSeconds = seconds % 60;
-  
+
   if (hours > 0) {
     return `${hours}小时${minutes}分钟${remainingSeconds}秒`;
   } else if (minutes > 0) {

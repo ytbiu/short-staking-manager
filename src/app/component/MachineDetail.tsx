@@ -598,6 +598,12 @@ export default function MachineDetail({ machineId }: MachineDetailProps) {
                 width: 160,
               },
               {
+                title: '额外租用费用',
+                dataIndex: 'formattedExtraRentFee',
+                key: 'formattedExtraRentFee',
+                width: 120,
+              },
+              {
                 title: '状态',
                 dataIndex: 'status',
                 key: 'status',
